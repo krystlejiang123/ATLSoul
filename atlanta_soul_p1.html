@@ -479,11 +479,13 @@ function drawTimingChart(allRows){
   const canvas=document.getElementById('tc-canvas');
   if(!canvas||!legEl||!projEl)return;
 
-  // X axis: T-7+, T-6, T-5, T-4, T-3, T-2, T-1, Game day (left→right)
-  const MAX_DAYS=7;
-  const xLabels=['T-7+','T-6','T-5','T-4','T-3','T-2','T-1','Game day'];
+  // X axis: T-6+, T-5, T-4, T-3, T-2, T-1, Game day (left→right)
+  const MAX_DAYS=6;
+  const xLabels=['T-6+','T-5','T-4','T-3','T-2','T-1','Game day'];
   const N=xLabels.length;
   const NEXT_GAME='2026 5/9 vs. DC Shadow';
+  // Exclude known outlier from historical average
+  const EXCLUDE_FROM_AVG=['2024 May 18 vs. Austin Torch'];
 
   // Only ticket rows with known game + created date
   const ticketRows=allRows.filter(r=>{
@@ -492,13 +494,15 @@ function drawTimingChart(allRows){
   });
 
   // Bucket revenue by game and days-before (0=game day)
+  // T-6+ buckets anything 6+ days out into index 0
   const gameData={};
   ticketRows.forEach(r=>{
     const gd=new Date(GAME_DATES[r.gm]);
     const cd=parseDate(r.created);
     if(!cd)return;
-    const db=Math.round((gd-cd)/(86400000));
-    if(db<0||db>MAX_DAYS)return;
+    let db=Math.round((gd-cd)/86400000);
+    if(db<0)return;
+    if(db>MAX_DAYS)db=MAX_DAYS; // bucket anything earlier into T-6+
     if(!gameData[r.gm])gameData[r.gm]={gm:r.gm,yr:r.yr,byDay:{},total:0};
     gameData[r.gm].byDay[db]=(gameData[r.gm].byDay[db]||0)+r.rev;
     gameData[r.gm].total+=r.rev;
@@ -510,21 +514,22 @@ function drawTimingChart(allRows){
     return;
   }
 
-  // Build cumulative % lines left→right (T-7+ to Game day)
-  // index 0 = T-7+, index 7 = Game day
-  // cumulative = sum of revenue from T-7+ up to that day / total
+  // Build cumulative % lines left→right (T-6+ to Game day)
   const lines=games.map(g=>{
     let cum=0;
     const pts=[];
     for(let i=0;i<N;i++){
-      const day=MAX_DAYS-i; // i=0→day=7, i=7→day=0
+      const day=MAX_DAYS-i; // i=0→day=6, i=6→day=0
       cum+=(g.byDay[day]||0);
       pts.push(Math.round(cum/g.total*1000)/1000);
     }
     return{gm:g.gm,yr:g.yr,pts,total:g.total};
   });
 
-  const histLines=lines.filter(l=>l.gm!==NEXT_GAME);
+  // Sort lines newest to oldest for legend order
+  lines.sort((a,b)=>b.yr!==a.yr?b.yr.localeCompare(a.yr):b.gm.localeCompare(a.gm));
+
+  const histLines=lines.filter(l=>l.gm!==NEXT_GAME&&!EXCLUDE_FROM_AVG.includes(l.gm));
   const avgPts=Array.from({length:N},(_,i)=>{
     const vals=histLines.map(l=>l.pts[i]);
     return vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length*1000)/1000:0;
@@ -545,20 +550,25 @@ function drawTimingChart(allRows){
   const today=new Date();
   const gameDate=new Date(GAME_DATES[NEXT_GAME]);
   const daysLeft=Math.max(0,Math.round((gameDate-today)/86400000));
-  const knownUpTo=Math.min(MAX_DAYS-daysLeft, N-1); // index in xLabels
+  const knownUpTo=Math.min(MAX_DAYS-daysLeft, N-1);
 
-  // Build datasets
-  const datasets=[
-    ...histLines.map((l,li)=>({
+  // Build datasets — sorted newest to oldest
+  const histDatasets=lines
+    .filter(l=>l.gm!==NEXT_GAME)
+    .map((l,li)=>({
       label:sh(l.gm)+' ('+l.yr+')',
       data:l.pts,
       borderColor:gameColor(l.gm,l.yr),
-      borderWidth:1.5,
-      borderDash:li%3===1?[4,3]:li%3===2?[2,2]:[],
+      borderWidth:EXCLUDE_FROM_AVG.includes(l.gm)?1:1.5,
+      borderDash:EXCLUDE_FROM_AVG.includes(l.gm)?[2,4]:li%3===1?[4,3]:li%3===2?[2,2]:[],
       pointRadius:0,
       tension:0.35,
       fill:false,
-    })),
+      opacity:EXCLUDE_FROM_AVG.includes(l.gm)?0.4:1,
+    }));
+
+  const datasets=[
+    ...histDatasets,
     {
       label:'Historical avg',
       data:avgPts,
@@ -586,7 +596,6 @@ function drawTimingChart(allRows){
     });
   }
 
-  // Destroy previous chart instance if exists
   if(tcChart){tcChart.destroy();tcChart=null;}
 
   tcChart=new Chart(canvas,{
@@ -612,15 +621,22 @@ function drawTimingChart(allRows){
     }
   });
 
-  // Legend
+  // Legend — newest to oldest, then avg, then live
   legEl.innerHTML='';
-  [...histLines,
-    {gm:'Historical avg',yr:'',_color:'#F5C800'},
-    ...(curLine?[{gm:NEXT_GAME,yr:'',_color:'#4ECDC4',_suffix:' (live)'}]:[])
-  ].forEach(l=>{
-    const col=l._color||gameColor(l.gm,l.yr);
-    const li=document.createElement('div');li.className='li';
-    li.innerHTML=`<div class="lsq" style="background:${col}"></div>${esc(l._color?l.gm+(l._suffix||''):sh(l.gm)+' ('+l.yr+')')}`;
+  const legendItems=[
+    ...lines.filter(l=>l.gm!==NEXT_GAME).map(l=>({
+      label:sh(l.gm)+' ('+l.yr+')',
+      color:gameColor(l.gm,l.yr),
+      muted:EXCLUDE_FROM_AVG.includes(l.gm),
+    })),
+    {label:'Historical avg',color:'#F5C800',muted:false},
+    ...(curLine?[{label:sh(NEXT_GAME)+' (live)',color:'#4ECDC4',muted:false}]:[]),
+  ];
+  legendItems.forEach(item=>{
+    const li=document.createElement('div');
+    li.className='li';
+    li.style.opacity=item.muted?'0.45':'1';
+    li.innerHTML=`<div class="lsq" style="background:${item.color}"></div>${esc(item.label)}${item.muted?' <span style="font-size:10px;color:#8FA88F">(excluded from avg)</span>':''}`;
     legEl.appendChild(li);
   });
 
@@ -638,6 +654,10 @@ function drawTimingChart(allRows){
     ].forEach(c=>{
       projEl.innerHTML+=`<div class="proj-card"><div class="proj-label">${c.label}</div><div class="proj-val ${c.cls}">${c.val}</div></div>`;
     });
+  } else {
+    // No current game data — show avg final only
+    const avgFinal=histLines.length?Math.round(histLines.reduce((s,l)=>s+l.total,0)/histLines.length):0;
+    projEl.innerHTML=`<div class="proj-card"><div class="proj-label">Hist avg final</div><div class="proj-val p">${$f(avgFinal)}</div></div>`;
   }
 }
 
