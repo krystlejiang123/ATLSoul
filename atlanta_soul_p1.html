@@ -262,6 +262,7 @@ function buildUI(){
         <div class="tc-legend" id="tc-legend"></div>
         <div class="tc-canvas-wrap"><canvas id="tc-canvas" role="img" aria-label="Cumulative ticket revenue timing by days before game day">Ticket purchase timing chart.</canvas></div>
         <div class="proj-box" id="proj-box"></div>
+        <div id="tc-debug"></div>
       </div>
       <div class="dd" id="dd">
         <div class="ddh"><div class="ddt" id="ddt">Breakdown</div><button class="ddc" onclick="document.getElementById('dd').style.display='none'">✕ Close</button></div>
@@ -503,9 +504,10 @@ function drawTimingChart(allRows){
     let db=Math.round((gd-cd)/86400000);
     if(db<0)return;
     if(db>MAX_DAYS)db=MAX_DAYS; // bucket anything earlier into T-6+
-    if(!gameData[r.gm])gameData[r.gm]={gm:r.gm,yr:r.yr,byDay:{},total:0};
+    if(!gameData[r.gm])gameData[r.gm]={gm:r.gm,yr:r.yr,byDay:{},total:0,rowCount:0};
     gameData[r.gm].byDay[db]=(gameData[r.gm].byDay[db]||0)+r.rev;
     gameData[r.gm].total+=r.rev;
+    gameData[r.gm].rowCount++;
   });
 
   const games=Object.values(gameData).filter(g=>g.total>0);
@@ -654,10 +656,43 @@ function drawTimingChart(allRows){
     ].forEach(c=>{
       projEl.innerHTML+=`<div class="proj-card"><div class="proj-label">${c.label}</div><div class="proj-val ${c.cls}">${c.val}</div></div>`;
     });
-  } else {
-    // No current game data — show avg final only
-    const avgFinal=histLines.length?Math.round(histLines.reduce((s,l)=>s+l.total,0)/histLines.length):0;
-    projEl.innerHTML=`<div class="proj-card"><div class="proj-label">Hist avg final</div><div class="proj-val p">${$f(avgFinal)}</div></div>`;
+  // Debug table — show raw numbers so we can verify
+  const debugEl=document.getElementById('tc-debug');
+  if(debugEl){
+    let html=`<div style="margin-top:16px;font-size:11px;color:var(--mu)">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:var(--y);margin-bottom:8px">Raw Data Check — Revenue by Day Before Game</div>
+    <div style="overflow-x:auto"><table style="font-size:11px;border-collapse:collapse;width:100%">
+    <thead><tr style="border-bottom:1px solid rgba(245,200,0,0.2)">
+      <th style="padding:5px 8px;text-align:left;color:var(--mu)">Game</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">T-6+</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">T-5</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">T-4</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">T-3</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">T-2</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">T-1</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">Game day</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--y)">Total</th>
+      <th style="padding:5px 8px;text-align:right;color:var(--mu)">Rows used</th>
+    </tr></thead><tbody>`;
+    // show all games including excluded
+    [...lines].sort((a,b)=>b.yr!==a.yr?b.yr.localeCompare(a.yr):b.gm.localeCompare(a.gm)).forEach(l=>{
+      const g=gameData[l.gm];
+      const isExcl=EXCLUDE_FROM_AVG.includes(l.gm);
+      const isCur=l.gm===NEXT_GAME;
+      const rowColor=isCur?'var(--t)':isExcl?'rgba(245,200,0,0.4)':'var(--tx)';
+      const days=[6,5,4,3,2,1,0];
+      const rowTotal=days.reduce((s,d)=>s+(g.byDay[d]||0),0);
+      html+=`<tr style="border-bottom:1px solid rgba(245,200,0,0.05)">
+        <td style="padding:4px 8px;color:${rowColor}">${esc(sh(l.gm))} (${l.yr})${isExcl?' *excl*':isCur?' ◆ live':''}</td>
+        ${days.map(d=>`<td style="padding:4px 8px;text-align:right;color:var(--mu)">${g.byDay[d]?'$'+Math.round(g.byDay[d]).toLocaleString():'-'}</td>`).join('')}
+        <td style="padding:4px 8px;text-align:right;color:var(--y);font-weight:600">$${Math.round(rowTotal).toLocaleString()}</td>
+        <td style="padding:4px 8px;text-align:right;color:var(--mu)">${g.rowCount||'?'}</td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>
+    <div style="margin-top:8px;color:var(--mu);font-size:10px">* Only includes ticket rows (Ticket - Online + Ticket - At Gate) where Created at date is present and game date is known. Orders >6 days out are bucketed into T-6+.</div>
+    </div>`;
+    debugEl.innerHTML=html;
   }
 }
 
