@@ -260,7 +260,7 @@ function buildUI(){
       <div class="chart-card" id="timing-card">
         <div class="chart-title">Ticket Purchase Timing — Days Before Game Day</div>
         <div class="tc-legend" id="tc-legend"></div>
-        <div class="tc-wrap"><svg class="tc-svg" id="tc-svg"></svg></div>
+        <div class="tc-wrap" id="tc-wrap"><svg class="tc-svg" id="tc-svg" style="width:100%;height:280px"></svg></div>
         <div class="proj-box" id="proj-box"></div>
       </div>
       <div class="dd" id="dd">
@@ -476,6 +476,21 @@ function drawTimingChart(allRows){
     return (it==='Ticket - Online'||it==='Ticket - At Gate') && GAME_DATES[r.gm] && r.created;
   });
 
+  // Robust date parser — handles "2025-04-05 10:23:00 +0000" and similar
+  function parseDate(s){
+    if(!s)return null;
+    // try direct
+    let d=new Date(s);
+    if(!isNaN(d.getTime()))return d;
+    // try replacing space with T
+    d=new Date(s.replace(' ','T'));
+    if(!isNaN(d.getTime()))return d;
+    // try just taking first 10 chars (YYYY-MM-DD)
+    d=new Date(s.slice(0,10));
+    if(!isNaN(d.getTime()))return d;
+    return null;
+  }
+
   // Build per-game cumulative % by days-before
   // days before = gameDate - orderDate (0=game day, negative=after)
   const MAX_DAYS=14; // show up to t-14
@@ -483,9 +498,8 @@ function drawTimingChart(allRows){
 
   ticketRows.forEach(r=>{
     const gd=new Date(GAME_DATES[r.gm]);
-    // parse created date — format varies, try robust parse
-    const cd=new Date(r.created);
-    if(isNaN(cd.getTime()))return;
+    const cd=parseDate(r.created);
+    if(!cd||isNaN(cd.getTime()))return;
     const daysBefore=Math.round((gd-cd)/(1000*60*60*24));
     if(daysBefore<0||daysBefore>MAX_DAYS)return;
     if(!gameData[r.gm])gameData[r.gm]={gm:r.gm,yr:r.yr,byDay:{},total:0};
@@ -592,9 +606,10 @@ function drawTimingChart(allRows){
   }
 
   html+='</svg>';
-  svg.outerHTML=html; // replace with rendered SVG
+  // Inject into the wrap div, replacing the placeholder svg
+  document.getElementById('tc-wrap').innerHTML=html;
 
-  // Legend
+  // Legend — appended to tc-legend div which is above the chart wrap
   legEl.innerHTML='';
   histLines.forEach(l=>{
     const col=gameColor(l.gm,l.yr);
