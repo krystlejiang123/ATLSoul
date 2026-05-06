@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlanta Soul — Revenue Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--y:#F5C800;--p:#E8748A;--t:#4ECDC4;--bg:#1A2E1A;--bg2:#243324;--card:#1E2B1E;--hov:#253425;--tx:#F5F0E8;--mu:#8FA88F;--b:rgba(245,200,0,0.15);--b2:rgba(245,200,0,0.3)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px}
+.hdr{background:var(--bg2);border-bottom:2px solid var(--y);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.logo{width:42px;height:42px;background:var(--y);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.htitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--y);line-height:1}
+.htitle span{color:var(--p)}
+.hsub{font-size:11px;color:var(--mu);margin-top:2px}
+.sbadge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t);background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);border-radius:20px;padding:5px 12px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--t);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.fbar{background:var(--bg2);border-bottom:1px solid var(--b);padding:9px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fbar label{font-size:11px;color:var(--mu)}
+select{background:var(--card);border:1px solid var(--b);border-radius:5px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:11px;padding:5px 8px;outline:none;cursor:pointer}
+select:hover{border-color:var(--b2)}
+.fdiv{width:1px;height:20px;background:var(--b)}
+.page{display:grid;grid-template-columns:1fr 270px;min-height:calc(100vh - 97px)}
+.charts-col{padding:20px 20px 20px 24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+.comm-col{background:var(--bg2);border-left:1px solid var(--b);padding:18px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+@media(max-width:860px){.page{grid-template-columns:1fr}.comm-col{border-left:none;border-top:1px solid var(--b)}}
+.chart-card{background:var(--card);border:1px solid var(--b);border-radius:10px;padding:16px 18px}
+.chart-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;color:var(--y);margin-bottom:10px}
+.hint{font-size:11px;font-family:'DM Sans',sans-serif;color:var(--mu);letter-spacing:0;font-weight:400;margin-left:6px}
+.legend{display:flex;flex-wrap:wrap;gap:5px 14px;margin-bottom:14px}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mu);cursor:pointer;user-select:none;transition:opacity .15s}
+.li.off{opacity:0.3}
+.lsq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.chart-outer{display:flex;overflow-x:auto;padding-bottom:6px}
+.yax{display:flex;flex-direction:column;justify-content:space-between;padding-bottom:44px;padding-right:6px;flex-shrink:0;min-width:40px}
+.yl{font-size:10px;color:var(--mu);text-align:right;white-space:nowrap}
+.chart-inner{display:flex;align-items:flex-end;gap:0;min-height:260px}
+.yg{display:flex;flex-direction:column;align-items:stretch;border-right:1px solid var(--b)}
+.yg:last-child{border-right:none}
+.ybars{display:flex;align-items:flex-end;gap:5px;padding:0 8px}
+.ylbl{text-align:center;font-size:10px;font-weight:600;color:rgba(245,200,0,0.6);letter-spacing:1px;padding:6px 8px 0;border-top:1px solid var(--b);margin-top:6px}
+.bwrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+.bstack{width:52px;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;transition:opacity .15s}
+.bstack:hover{opacity:0.82}
+.seg{width:100%;flex-shrink:0}
+.seg:hover{filter:brightness(1.18)}
+.blbl{font-size:9px;color:var(--mu);text-align:center;width:56px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt{position:fixed;background:#0a1a0a;border:1px solid var(--b2);border-radius:8px;padding:10px 13px;font-size:11px;pointer-events:none;z-index:9999;min-width:160px;box-shadow:0 4px 24px rgba(0,0,0,.6);display:none}
+.tt-t{font-weight:600;color:var(--y);margin-bottom:5px;font-size:12px}
+.tt-r{display:flex;justify-content:space-between;gap:16px;margin:2px 0}
+.tt-l{color:var(--mu)}
+.dd{background:var(--card);border:2px solid var(--b2);border-radius:10px;padding:16px 18px;display:none}
+.ddh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ddt{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;color:var(--y)}
+.ddc{background:transparent;border:1px solid var(--b);color:var(--mu);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif}
+.ddc:hover{border-color:var(--b2);color:var(--tx)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:6px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--b);background:rgba(0,0,0,.1);white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(245,200,0,.05)}
+tbody tr:hover{background:var(--hov)}
+tbody tr:last-child{border-bottom:none}
+td{padding:6px 10px}
+td.r{text-align:right;font-variant-numeric:tabular-nums}
+td.rv{color:var(--y);font-weight:500}
+td.dm{color:var(--mu);font-size:11px}
+tfoot td{padding:6px 10px;font-weight:600;color:var(--y);border-top:1px solid rgba(245,200,0,.2);font-size:11px}
+tfoot td.r{text-align:right}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
+/* timing chart */
+.tc-wrap{position:relative;height:280px;margin-top:8px}
+.tc-svg{width:100%;height:100%}
+.tc-legend{display:flex;flex-wrap:wrap;gap:5px 14px;margin-bottom:10px}
+.proj-box{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+.proj-card{background:rgba(0,0,0,0.2);border:1px solid var(--b);border-radius:8px;padding:10px 12px;text-align:center}
+.proj-label{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.proj-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px}
+.proj-val.g{color:var(--t)}.proj-val.y{color:var(--y)}.proj-val.p{color:var(--p)}
+.comm-hdr{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--y);margin-bottom:2px}
+.ccard{background:var(--card);border:1px solid var(--b);border-radius:8px;padding:11px 13px;display:flex;flex-direction:column;gap:5px}
+.ccard.pos{border-color:rgba(78,205,196,0.3)}
+.ccard.cau{border-color:rgba(245,200,0,0.3)}
+.cicon{font-size:15px}
+.ctitle{font-size:11px;font-weight:600;color:var(--tx);line-height:1.3}
+.cstat{font-size:20px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px}
+.cstat.g{color:var(--t)}.cstat.y{color:var(--y)}.cstat.p{color:var(--p)}
+.cbody{font-size:11px;color:var(--mu);line-height:1.6}
+.spin{display:flex;align-items:center;justify-content:center;padding:40px;flex-direction:column;gap:10px}
+.spinner{width:24px;height:24px;border:2px solid var(--b);border-top-color:var(--y);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stext{font-size:11px;color:var(--mu)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">🏆</div>
+    <div>
+      <div class="htitle">Atlanta Soul <span>Pro Ultimate</span></div>
+      <div class="hsub">Revenue Analytics · Paid Orders Only</div>
+    </div>
+  </div>
+  <div class="sbadge"><div class="dot"></div><span id="upd">Loading...</span></div>
+</div>
+<div class="fbar">
+  <label>Year</label><select id="fy" onchange="render()"><option value="">All years</option></select>
+  <div class="fdiv"></div>
+  <label>Game</label><select id="fg" onchange="render()"><option value="">All games</option></select>
+</div>
+<div class="page">
+  <div class="charts-col" id="charts-col">
+    <div class="spin"><div class="spinner"></div><div class="stext">Fetching live data...</div></div>
+  </div>
+  <div class="comm-col" id="comm-col">
+    <div class="comm-hdr">Insights</div>
+    <div class="spin"><div class="spinner"></div></div>
+  </div>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vS-lgTcHS9sp3EaFWwDKF8vSmU4M84-AfQNhYEptEhnLNe8NaYqX9itufGM0MRBgCQ17rYMffYV5dy9/pub?gid=16364793&single=true&output=csv';
+
+// Item type — ticket split by online vs at-gate
+const IT_ORDER=['Ticket - Online','Ticket - At Gate','Season Pass','Concessions','Merch','Raffle','Gift card','Bounce house','Other'];
+const IT_COLORS={'Ticket - Online':'#4A90D9','Ticket - At Gate':'#1a5fa0','Season Pass':'#E8748A','Concessions':'#4ECDC4','Merch':'#F5C800','Raffle':'#FB923C','Gift card':'#C084FC','Bounce house':'#86EFAC','Other':'#94A3B8'};
+
+// Discount source — no-code split by online vs at-gate (same blues)
+const DS_ORDER=['Soul player','College','Club','Youth','Other','No Code - Online','No Code - At Gate'];
+const DS_COLORS={'Soul player':'#E8748A','College':'#A78BFA','Club':'#FB923C','Youth':'#86EFAC','Other':'#94A3B8','No Code - Online':'#4A90D9','No Code - At Gate':'#1a5fa0'};
+
+const GAME_SHORT={
+  '2026 4/18 vs. Nashville Nightshade':'4/18 Nashville','2026 4/25 vs. Raleigh Radiance':'4/25 Raleigh',
+  '2026 5/9 vs. DC Shadow':'5/9 DC','2025 April 5 vs. Austin Torch':'4/5 Austin',
+  '2025 May 24 vs. Nashville Nightshade':'5/24 Nashville','2025 June 7 vs. LA Astra':'6/7 LA Astra',
+  '2024 April 13 vs. Raleigh Radiance':'4/13 Raleigh','2024 May 18 vs. Austin Torch':'5/18 Austin',
+  '2024 June 8 vs. DC Shadow':'6/8 DC','2023 April 22 Home Opener Atlanta Soul vs. Minnesota Strike':'4/22 MN',
+  '2023 May 13 Atlanta Soul vs. Raleigh Radiance':'5/13 Raleigh','2023 June 3 Atlanta Soul vs. Nashville Nightshade':'6/3 Nashville',
+  '2023 March 25 Preseason Game':'3/25 Preseason','Season Tickets':'Season Tickets','Other':'Other',
+};
+
+// Game date map (for timing chart)
+const GAME_DATES={
+  '2026 5/9 vs. DC Shadow':             '2026-05-09',
+  '2026 4/25 vs. Raleigh Radiance':     '2026-04-25',
+  '2026 4/18 vs. Nashville Nightshade': '2026-04-18',
+  '2025 June 7 vs. LA Astra':           '2025-06-07',
+  '2025 May 24 vs. Nashville Nightshade':'2025-05-24',
+  '2025 April 5 vs. Austin Torch':      '2025-04-05',
+  '2024 June 8 vs. DC Shadow':          '2024-06-08',
+  '2024 May 18 vs. Austin Torch':       '2024-05-18',
+  '2024 April 13 vs. Raleigh Radiance': '2024-04-13',
+};
+// Year base colors — shades generated per game within year
+const YR_BASE={'2024':'#4A90D9','2025':'#E8748A','2026':'#4ECDC4'};
+
+let DATA=[], hidIT=new Set(), hidDS=new Set();
+
+function $f(v){return '$'+Math.round(v).toLocaleString();}
+function pct(v){return Math.round(v*100)+'%';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function num(v){return parseFloat(String(v||'').replace(/[$,\s]/g,''))||0;}
+function sh(g){return GAME_SHORT[g]||g;}
+
+function normIT(r){
+  const t=String(r.it||'').toLowerCase().trim();
+  const st=String(r.ist||'').toLowerCase().trim();
+  const src=String(r.src||'').toLowerCase().trim();
+  if(t==='ticket'||t==='tickets'){
+    if(st.includes('at gate')||src==='at gate') return 'Ticket - At Gate';
+    return 'Ticket - Online';
+  }
+  if(t==='season pass') return 'Season Pass';
+  if(t==='concessions') return 'Concessions';
+  if(t==='merch') return 'Merch';
+  if(t==='raffle') return 'Raffle';
+  if(t==='bounce house') return 'Bounce house';
+  if(t==='gift card') return 'Gift card';
+  return 'Other';
+}
+
+function normDS(r){
+  const code=String(r.code||'').trim();
+  if(!code){
+    const st=String(r.ist||'').toLowerCase().trim();
+    const src=String(r.src||'').toLowerCase().trim();
+    if(st.includes('at gate')||src==='at gate'||src==='venmo'||src==='zelle'||src==='cash') return 'No Code - At Gate';
+    return 'No Code - Online';
+  }
+  const d=String(r.dt||'').toLowerCase().trim();
+  if(d==='soul player') return 'Soul player';
+  if(d==='college') return 'College';
+  if(d==='club') return 'Club';
+  if(d==='youth') return 'Youth';
+  if(d==='none'||d==='') return 'No Code - Online';
+  return 'Other';
+}
+
+// CSV
+function parseCSV(text){
+  const lines=text.trim().split('\n');
+  const hdrs=parseCSVLine(lines[0]).map(h=>h.toLowerCase().trim());
+  return lines.slice(1).map(line=>{
+    const vals=parseCSVLine(line);
+    const o={};hdrs.forEach((h,i)=>o[h]=(vals[i]||'').trim());return o;
+  }).filter(r=>Object.values(r).some(v=>v));
+}
+function parseCSVLine(line){
+  const res=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){res.push(cur);cur='';}else cur+=c;
+  }
+  res.push(cur);return res;
+}
+
+async function loadData(){
+  try{
+    const res=await fetch(CSV_URL+'&_t='+Date.now());
+    const text=await res.text();
+    const parsed=parseCSV(text);
+    DATA=parsed
+      .filter(r=>String(r['financial status']||'').trim().toUpperCase()==='PAID')
+      .map(r=>({
+        rev:num(r['subtotal']),code:(r['discount code']||'').trim(),
+        qty:num(r['lineitem quantity'])||0,yr:String(r['year']||'').trim(),
+        gm:(r['game']||'').trim(),it:(r['item type']||'').trim(),
+        ist:(r['item sub-type']||'').trim(),dt:(r['discount type']||'').trim(),
+        src:(r['source']||'').trim(),
+        created:(r['created at']||'').trim(),
+      }))
+      .filter(r=>r.yr&&r.gm);
+    document.getElementById('upd').textContent='Updated '+new Date().toLocaleTimeString();
+    buildUI();
+  }catch(e){
+    document.getElementById('upd').textContent='Error loading data';
+    document.getElementById('charts-col').innerHTML='<div style="padding:20px;color:#E8748A">Could not load data: '+e.message+'</div>';
+    console.error(e);
+  }
+}
+
+function buildUI(){
+  const years=[...new Set(DATA.map(r=>r.yr))].filter(Boolean).sort((a,b)=>b.localeCompare(a));
+  const games=[...new Set(DATA.map(r=>r.gm))].filter(Boolean).sort();
+  fillSel('fy',years);fillSel('fg',games);
+  if(!document.getElementById('chart1')){
+    document.getElementById('charts-col').innerHTML=`
+      <div class="chart-card">
+        <div class="chart-title">Revenue by Game — by Item Type</div>
+        <div class="legend" id="leg1"></div>
+        <div class="chart-outer"><div class="yax" id="ya1"></div><div class="chart-inner" id="chart1"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Revenue by Game — by Discount Source<span class="hint">(click a segment to drill down)</span></div>
+        <div class="legend" id="leg2"></div>
+        <div class="chart-outer"><div class="yax" id="ya2"></div><div class="chart-inner" id="chart2"></div></div>
+      </div>
+      <div class="chart-card" id="timing-card">
+        <div class="chart-title">Ticket Purchase Timing — Days Before Game Day</div>
+        <div class="tc-legend" id="tc-legend"></div>
+        <div class="tc-wrap"><svg class="tc-svg" id="tc-svg"></svg></div>
+        <div class="proj-box" id="proj-box"></div>
+      </div>
+      <div class="dd" id="dd">
+        <div class="ddh"><div class="ddt" id="ddt">Breakdown</div><button class="ddc" onclick="document.getElementById('dd').style.display='none'">✕ Close</button></div>
+        <div id="ddb"></div>
+      </div>`;
+  }
+  render();
+}
+
+function fillSel(id,vals){
+  const s=document.getElementById(id);const cur=s.value;
+  while(s.options.length>1)s.remove(1);
+  vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;s.appendChild(o);});
+}
+
+function filtered(){
+  const yr=document.getElementById('fy').value;
+  const gm=document.getElementById('fg').value;
+  return DATA.filter(r=>(!yr||r.yr===yr)&&(!gm||r.gm===gm));
+}
+
+function pivot(rows,segFn,order){
+  const map={};
+  rows.forEach(r=>{
+    const k=r.yr+'§'+r.gm;
+    if(!map[k])map[k]={yr:r.yr,gm:r.gm,segs:{},total:0};
+    const s=segFn(r);map[k].segs[s]=(map[k].segs[s]||0)+r.rev;map[k].total+=r.rev;
+  });
+  const entries=Object.values(map).sort((a,b)=>a.yr!==b.yr?b.yr.localeCompare(a.yr):a.gm.localeCompare(b.gm));
+  const present=new Set(rows.map(segFn));
+  return {entries,segs:order.filter(s=>present.has(s))};
+}
+
+function yAxis(id,maxV){
+  const el=document.getElementById(id);if(!el)return;el.innerHTML='';
+  for(let i=5;i>=0;i--){
+    const v=Math.round(maxV*i/5);const d=document.createElement('div');d.className='yl';
+    d.textContent=v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+v;el.appendChild(d);
+  }
+}
+
+function drawChart(cid,yid,entries,segs,colors,hidden,H,onClick){
+  const el=document.getElementById(cid);if(!el)return;
+  const maxV=Math.max(...entries.map(e=>segs.filter(s=>!hidden.has(s)).reduce((sum,s)=>sum+(e.segs[s]||0),0)),1);
+  yAxis(yid,maxV);
+  const byYr={};entries.forEach(e=>{if(!byYr[e.yr])byYr[e.yr]=[];byYr[e.yr].push(e);});
+  el.innerHTML='';
+  const tt=document.getElementById('tt');
+  Object.keys(byYr).sort((a,b)=>b.localeCompare(a)).forEach(yr=>{
+    const yg=document.createElement('div');yg.className='yg';
+    const row=document.createElement('div');row.className='ybars';
+    byYr[yr].forEach(entry=>{
+      const total=segs.filter(s=>!hidden.has(s)).reduce((sum,s)=>sum+(entry.segs[s]||0),0);
+      const px=total>0?Math.round(total/maxV*H):0;
+      const wrap=document.createElement('div');wrap.className='bwrap';
+      const bar=document.createElement('div');bar.className='bstack';bar.style.height=px+'px';
+      segs.forEach(seg=>{
+        if(hidden.has(seg))return;
+        const v=entry.segs[seg]||0;if(v<=0)return;
+        const sh2=Math.max(1,Math.round(v/maxV*H));
+        const s=document.createElement('div');s.className='seg';s.style.height=sh2+'px';s.style.background=colors[seg]||'#666';
+        s.addEventListener('mouseenter',ev=>{
+          tt.style.display='block';
+          tt.innerHTML=`<div class="tt-t">${esc(sh(entry.gm))} · ${yr}</div>
+            <div class="tt-r"><span class="tt-l">${esc(seg)}</span><span style="color:${colors[seg]}">${$f(v)}</span></div>
+            <div class="tt-r"><span class="tt-l">Total</span><span>${$f(total)}</span></div>`;
+          tt.style.left=(ev.clientX+14)+'px';tt.style.top=(ev.clientY-12)+'px';
+        });
+        s.addEventListener('mousemove',ev=>{tt.style.left=(ev.clientX+14)+'px';tt.style.top=(ev.clientY-12)+'px';});
+        s.addEventListener('mouseleave',()=>tt.style.display='none');
+        if(onClick){s.style.cursor='pointer';s.addEventListener('click',()=>{tt.style.display='none';onClick(seg,entry.gm,entry.yr);});}
+        bar.appendChild(s);
+      });
+      const lbl=document.createElement('div');lbl.className='blbl';lbl.title=entry.gm;lbl.textContent=sh(entry.gm);
+      wrap.appendChild(bar);wrap.appendChild(lbl);row.appendChild(wrap);
+    });
+    const yl=document.createElement('div');yl.className='ylbl';yl.textContent=yr;
+    yg.appendChild(row);yg.appendChild(yl);el.appendChild(yg);
+  });
+}
+
+function legend(id,segs,colors,hidden,toggle){
+  const el=document.getElementById(id);if(!el)return;el.innerHTML='';
+  segs.forEach(s=>{
+    const li=document.createElement('div');li.className='li'+(hidden.has(s)?' off':'');
+    li.innerHTML=`<div class="lsq" style="background:${colors[s]||'#888'}"></div>${esc(s)}`;
+    li.onclick=()=>toggle(s);el.appendChild(li);
+  });
+}
+
+function drilldown(seg,game,year){
+  const rows=filtered().filter(r=>normDS(r)===seg&&r.yr===year&&r.gm===game);
+  const byCode={};
+  rows.forEach(r=>{
+    const c=r.code||'(no code)';
+    if(!byCode[c])byCode[c]={code:c,rev:0,qty:0,orders:0};
+    byCode[c].rev+=r.rev;byCode[c].qty+=r.qty;byCode[c].orders++;
+  });
+  const codes=Object.values(byCode).sort((a,b)=>b.rev-a.rev);
+  const tot=codes.reduce((s,c)=>({rev:s.rev+c.rev,qty:s.qty+c.qty,orders:s.orders+c.orders}),{rev:0,qty:0,orders:0});
+  const col=DS_COLORS[seg]||'#888';
+  document.getElementById('ddt').textContent=`${seg} · ${sh(game)} · ${year}`;
+  document.getElementById('ddb').innerHTML=`<table>
+    <thead><tr><th>Code</th><th class="r">Revenue</th><th class="r">Units</th><th class="r">Orders</th><th class="r">Avg</th></tr></thead>
+    <tbody>${codes.map(c=>`<tr>
+      <td><span class="badge" style="background:${col}22;color:${col};border:1px solid ${col}55">${esc(c.code)}</span></td>
+      <td class="r rv">${$f(c.rev)}</td><td class="r dm">${c.qty||'—'}</td>
+      <td class="r dm">${c.orders}</td><td class="r dm">${c.orders?$f(c.rev/c.orders):'—'}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td>Total</td><td class="r">${$f(tot.rev)}</td><td class="r">${tot.qty||'—'}</td><td class="r">${tot.orders}</td><td class="r">—</td></tr></tfoot>
+  </table>`;
+  const dd=document.getElementById('dd');dd.style.display='block';
+  setTimeout(()=>dd.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+
+function commentary(rows){
+  const col=document.getElementById('comm-col');if(!col)return;
+  const byYr={};
+  rows.forEach(r=>{
+    if(!r.yr)return;
+    if(!byYr[r.yr])byYr[r.yr]={rev:0,soul:0,online:0,gate:0,discounted:0,orders:0};
+    const y=byYr[r.yr];
+    y.rev+=r.rev;y.orders++;
+    if(normDS(r)==='Soul player')y.soul+=r.rev;
+    const it=normIT(r);
+    if(it==='Ticket - Online')y.online+=r.rev;
+    if(it==='Ticket - At Gate')y.gate+=r.rev;
+    if(r.code&&r.code.trim()&&r.dt&&r.dt.toLowerCase()!=='none')y.discounted+=r.rev;
+  });
+  const yrs=Object.keys(byYr).filter(Boolean).sort((a,b)=>b.localeCompare(a));
+  const cards=[];
+
+  if(yrs.length>=2){
+    const a=byYr[yrs[0]],b=byYr[yrs[1]];
+    const g=b.rev>0?(a.rev-b.rev)/b.rev:0;
+    cards.push({cls:g>=0?'pos':'cau',icon:'💰',
+      title:`Total revenue ${g>=0?'▲':'▼'} ${pct(Math.abs(g))} vs ${yrs[1]}`,
+      stat:$f(a.rev),sc:'y',
+      body:`${yrs[0]}: ${$f(a.rev)} across ${a.orders} orders. Prior year: ${$f(b.rev)}.`});
+  }
+
+  if(yrs.length>=2){
+    const a=byYr[yrs[0]],b=byYr[yrs[1]];
+    const s0=a.rev>0?a.soul/a.rev:0,s1=b.rev>0?b.soul/b.rev:0;
+    const good=s0<s1&&a.rev>b.rev;
+    cards.push({cls:good?'pos':'',icon:'🎽',
+      title:`Soul player direct: ${pct(s0)} of ${yrs[0]} revenue`,
+      stat:pct(s0),sc:'p',
+      body:`${s0<s1?'Down':'Up'} from ${pct(s1)} in ${yrs[1]}. ${good?'Healthy — overall revenue is growing while reliance on player networks decreases.':'Track as you grow other channels.'}`});
+  }
+
+  if(yrs.length>=1){
+    const a=byYr[yrs[0]];
+    const tt=a.online+a.gate;
+    if(tt>0){
+      const gs=a.gate/tt;
+      cards.push({cls:'',icon:'🎟️',
+        title:`At-gate is ${pct(gs)} of ${yrs[0]} ticket revenue`,
+        stat:$f(a.gate),sc:'g',
+        body:`${$f(a.online)} came via online pre-sales. At-gate drives walk-up revenue but is harder to forecast and plan staffing for.`});
+    }
+  }
+
+  const gameRevs={};
+  rows.forEach(r=>{if(!gameRevs[r.gm])gameRevs[r.gm]={gm:r.gm,rev:0};gameRevs[r.gm].rev+=r.rev;});
+  const top=Object.values(gameRevs).sort((a,b)=>b.rev-a.rev)[0];
+  if(top){cards.push({cls:'pos',icon:'🏆',title:`Top game: ${sh(top.gm)}`,stat:$f(top.rev),sc:'y',body:`Highest single-game revenue across all years. Use as benchmark for game day planning.`});}
+
+  if(yrs.length>=2){
+    const a=byYr[yrs[0]],b=byYr[yrs[1]];
+    const d0=a.rev>0?a.discounted/a.rev:0,d1=b.rev>0?b.discounted/b.rev:0;
+    cards.push({cls:d0<=d1?'pos':'cau',icon:'🏷️',
+      title:`Discount code share: ${pct(d0)} in ${yrs[0]}`,
+      stat:pct(d0),sc:d0<=d1?'g':'p',
+      body:`${d0<d1?'Down':'Up'} from ${pct(d1)} in ${yrs[1]}. ${d0<d1?'Discount reliance declining — positive for margin.':'Consider tightening code distribution.'}`});
+  }
+
+  if(yrs.length>=2){
+    const a=byYr[yrs[0]],b=byYr[yrs[1]];
+    const aov0=a.orders?a.rev/a.orders:0,aov1=b.orders?b.rev/b.orders:0;
+    const up=aov0>=aov1;
+    cards.push({cls:up?'pos':'cau',icon:'📈',
+      title:`Avg order ${up?'▲':'▼'} to ${$f(aov0)} in ${yrs[0]}`,
+      stat:$f(aov0),sc:up?'g':'p',
+      body:`vs. ${$f(aov1)} in ${yrs[1]}. ${up?'Higher basket size — bundling or pricing is working.':'Orders are shrinking — consider bundle offers or upsells.'}`});
+  }
+
+  col.innerHTML='<div class="comm-hdr">Insights</div>';
+  cards.forEach(c=>{
+    const d=document.createElement('div');d.className=`ccard ${c.cls}`;
+    d.innerHTML=`<div class="cicon">${c.icon}</div><div class="ctitle">${esc(c.title)}</div><div class="cstat ${c.sc}">${esc(c.stat)}</div><div class="cbody">${esc(c.body)}</div>`;
+    col.appendChild(d);
+  });
+}
+
+// ── TIMING CHART ─────────────────────────────────────────────────────────────
+function shadeColor(hex, pct){ // pct: 0=original, 1=white
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const nr=Math.round(r+(255-r)*pct),ng=Math.round(g+(255-g)*pct),nb=Math.round(b+(255-b)*pct);
+  return `rgb(${nr},${ng},${nb})`;
+}
+
+function drawTimingChart(allRows){
+  const svg=document.getElementById('tc-svg');
+  const legEl=document.getElementById('tc-legend');
+  const projEl=document.getElementById('proj-box');
+  if(!svg||!legEl||!projEl)return;
+
+  // Only ticket rows with known game dates and created date
+  const ticketRows=allRows.filter(r=>{
+    const it=normIT(r);
+    return (it==='Ticket - Online'||it==='Ticket - At Gate') && GAME_DATES[r.gm] && r.created;
+  });
+
+  // Build per-game cumulative % by days-before
+  // days before = gameDate - orderDate (0=game day, negative=after)
+  const MAX_DAYS=14; // show up to t-14
+  const gameData={};
+
+  ticketRows.forEach(r=>{
+    const gd=new Date(GAME_DATES[r.gm]);
+    // parse created date — format varies, try robust parse
+    const cd=new Date(r.created);
+    if(isNaN(cd.getTime()))return;
+    const daysBefore=Math.round((gd-cd)/(1000*60*60*24));
+    if(daysBefore<0||daysBefore>MAX_DAYS)return;
+    if(!gameData[r.gm])gameData[r.gm]={gm:r.gm,yr:r.yr,byDay:{},total:0};
+    gameData[r.gm].byDay[daysBefore]=(gameData[r.gm].byDay[daysBefore]||0)+r.rev;
+    gameData[r.gm].total+=r.rev;
+  });
+
+  const games=Object.values(gameData).filter(g=>g.total>0);
+  if(!games.length){svg.innerHTML='<text x="50%" y="50%" text-anchor="middle" fill="#8FA88F" font-size="12" font-family="DM Sans">No timing data available — check that Created at column is in your published sheet</text>';return;}
+
+  // Build cumulative % lines (from t-MAX_DAYS to t-0)
+  // x axis: MAX_DAYS down to 0
+  const xLabels=[];
+  for(let d=MAX_DAYS;d>=0;d--)xLabels.push(d===0?'Game day':`T-${d}`);
+
+  // Per game: cumulative rev from t-MAX_DAYS up to each day
+  const lines=games.map(g=>{
+    const pts=[];
+    let cum=0;
+    for(let d=MAX_DAYS;d>=0;d--){
+      cum+=(g.byDay[d]||0);
+      pts.push(g.total>0?cum/g.total:0);
+    }
+    return{gm:g.gm,yr:g.yr,pts,total:g.total};
+  });
+
+  // Average line across historical games (exclude current game 5/9)
+  const NEXT_GAME='2026 5/9 vs. DC Shadow';
+  const histLines=lines.filter(l=>l.gm!==NEXT_GAME);
+  const avgPts=xLabels.map((_,i)=>{
+    const vals=histLines.map(l=>l.pts[i]).filter(v=>v!==undefined);
+    return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:0;
+  });
+
+  // Current game line
+  const curLine=lines.find(l=>l.gm===NEXT_GAME);
+
+  // Assign colors — per year, shade by game index within year
+  const yrGameIdx={};
+  lines.forEach(l=>{
+    if(!yrGameIdx[l.yr])yrGameIdx[l.yr]=[];
+    if(!yrGameIdx[l.yr].includes(l.gm))yrGameIdx[l.yr].push(l.gm);
+  });
+  function gameColor(gm,yr){
+    const base=YR_BASE[yr]||'#94A3B8';
+    const idx=yrGameIdx[yr]?yrGameIdx[yr].indexOf(gm):0;
+    const total=yrGameIdx[yr]?yrGameIdx[yr].length:1;
+    return shadeColor(base,idx/(Math.max(total,2)));
+  }
+
+  // Draw SVG
+  const W=svg.parentElement.clientWidth||600;
+  const H=260;
+  const PAD={t:20,r:20,b:40,l:44};
+  const cW=W-PAD.l-PAD.r;
+  const cH=H-PAD.t-PAD.b;
+  const n=xLabels.length;
+
+  function px(i){return PAD.l+i*(cW/(n-1));}
+  function py(v){return PAD.t+cH*(1-v);}
+
+  let html=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">`;
+
+  // Gridlines
+  for(let i=0;i<=4;i++){
+    const y=py(i/4);
+    html+=`<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(245,200,0,0.08)" stroke-width="1"/>`;
+    html+=`<text x="${PAD.l-6}" y="${y+4}" text-anchor="end" fill="#8FA88F" font-size="10" font-family="DM Sans">${Math.round(i/4*100)}%</text>`;
+  }
+
+  // X axis labels — every 2 days
+  xLabels.forEach((lbl,i)=>{
+    if(i%2===0||i===n-1){
+      html+=`<text x="${px(i)}" y="${H-8}" text-anchor="middle" fill="#8FA88F" font-size="9" font-family="DM Sans">${lbl}</text>`;
+    }
+  });
+
+  // Historical game lines
+  histLines.forEach(l=>{
+    const col=gameColor(l.gm,l.yr);
+    const d=l.pts.map((v,i)=>`${i===0?'M':'L'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+    html+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.7"/>`;
+  });
+
+  // Average line (dashed yellow)
+  const avgD=avgPts.map((v,i)=>`${i===0?'M':'L'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+  html+=`<path d="${avgD}" fill="none" stroke="#F5C800" stroke-width="2" stroke-dasharray="5,4"/>`;
+
+  // Current game line (solid teal, thicker)
+  if(curLine){
+    // Only draw up to where we have data (today)
+    const today=new Date();
+    const gameDate=new Date(GAME_DATES[NEXT_GAME]);
+    const daysLeft=Math.round((gameDate-today)/(1000*60*60*24));
+    const knownUpTo=MAX_DAYS-Math.max(0,daysLeft); // index in xLabels
+    const curPts=curLine.pts.slice(0,Math.min(knownUpTo+1,n));
+    if(curPts.length>1){
+      const curD=curPts.map((v,i)=>`${i===0?'M':'L'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+      html+=`<path d="${curD}" fill="none" stroke="#4ECDC4" stroke-width="2.5"/>`;
+      // dot at last known point
+      const lx=px(curPts.length-1),ly=py(curPts[curPts.length-1]);
+      html+=`<circle cx="${lx}" cy="${ly}" r="4" fill="#4ECDC4"/>`;
+    }
+  }
+
+  html+='</svg>';
+  svg.outerHTML=html; // replace with rendered SVG
+
+  // Legend
+  legEl.innerHTML='';
+  histLines.forEach(l=>{
+    const col=gameColor(l.gm,l.yr);
+    const li=document.createElement('div');li.className='li';
+    li.innerHTML=`<div class="lsq" style="background:${col}"></div>${esc(sh(l.gm))}`;
+    legEl.appendChild(li);
+  });
+  // avg + current
+  const avgLi=document.createElement('div');avgLi.className='li';
+  avgLi.innerHTML=`<div class="lsq" style="background:#F5C800;opacity:0.8"></div>Historical avg`;
+  legEl.appendChild(avgLi);
+  if(curLine){
+    const curLi=document.createElement('div');curLi.className='li';
+    curLi.innerHTML=`<div class="lsq" style="background:#4ECDC4"></div>${esc(sh(NEXT_GAME))} (live)`;
+    legEl.appendChild(curLi);
+  }
+
+  // ── PROJECTION ──────────────────────────────────────────────────────────────
+  projEl.innerHTML='';
+  if(curLine&&avgPts.length){
+    const today=new Date();
+    const gameDate=new Date(GAME_DATES[NEXT_GAME]);
+    const daysLeft=Math.max(0,Math.round((gameDate-today)/(1000*60*60*24)));
+    const knownIdx=Math.min(MAX_DAYS-daysLeft,n-1);
+    const curPctSoFar=curLine.pts[knownIdx]||0;
+
+    // avg % at same point historically
+    const avgAtSamePoint=avgPts[knownIdx]||0;
+
+    // projected total = currentRev / avg% at game day (avg% at index n-1 = 1.0 by definition, use curPctSoFar / avgAtSamePoint)
+    const curRevSoFar=curLine.total*curPctSoFar; // actual rev so far
+    const projTotal=avgAtSamePoint>0?curRevSoFar/avgAtSamePoint:0;
+    const avgFinalRev=histLines.length?histLines.reduce((s,l)=>s+l.total,0)/histLines.length:0;
+
+    const cards=[
+      {label:'Revenue so far',val:$f(curRevSoFar),cls:'g'},
+      {label:'Projected total',val:projTotal>0?$f(projTotal):'—',cls:'y'},
+      {label:'Hist avg final',val:$f(avgFinalRev),cls:'p'},
+    ];
+    cards.forEach(c=>{
+      projEl.innerHTML+=`<div class="proj-card"><div class="proj-label">${c.label}</div><div class="proj-val ${c.cls}">${c.val}</div></div>`;
+    });
+  }
+}
+
+function render(){
+  if(!DATA.length)return;
+  const rows=filtered();const H=260;
+  const p1=pivot(rows,normIT,IT_ORDER);
+  legend('leg1',p1.segs,IT_COLORS,hidIT,s=>{hidIT.has(s)?hidIT.delete(s):hidIT.add(s);render();});
+  drawChart('chart1','ya1',p1.entries,p1.segs,IT_COLORS,hidIT,H,null);
+  const p2=pivot(rows,normDS,DS_ORDER);
+  legend('leg2',p2.segs,DS_COLORS,hidDS,s=>{hidDS.has(s)?hidDS.delete(s):hidDS.add(s);render();});
+  drawChart('chart2','ya2',p2.entries,p2.segs,DS_COLORS,hidDS,H,drilldown);
+  commentary(rows);
+  drawTimingChart(DATA); // always uses full dataset for timing (needs all history)
+}
+
+loadData();
+setInterval(loadData,60000);
+</script>
+</body>
+</html>
